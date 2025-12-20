@@ -9,7 +9,7 @@ from services.cbr_service import fetch_cbr_rates
 from config import NATS_SUBJECT
 
 async def update_currencies_periodically(app):
-    print("Background task started")
+    print("[TASK] Фоновая задача обновления валют запущена")
 
     while True:
         try:
@@ -24,14 +24,20 @@ async def update_currencies_periodically(app):
 
                     if existing:
                         if existing.rate != rate:
+                            print(
+                                f"[DB] Обновление {currency_name}: "
+                                f"{existing.rate} → {rate}"
+                            )
                             existing.rate = rate
                             existing.updated_at = datetime.utcnow()
                     else:
+                        print(f"[DB] Добавление новой валюты {currency_name} = {rate}")
                         db.add(Currency(currency=currency_name, rate=rate))
 
                 await db.commit()
 
             if hasattr(app.state, "nc"):
+                print("[NATS] Отправка события rates_update")
                 await app.state.nc.publish(
                     NATS_SUBJECT,
                     json.dumps({
@@ -41,6 +47,7 @@ async def update_currencies_periodically(app):
                 )
 
         except Exception as e:
-            print("Background task error:", e)
+            print("[TASK] Ошибка в фоновой задаче:", e)
 
-        await asyncio.sleep(60)
+        print("[TASK] Ожидание 120 секунд до следующего обновления\n")
+        await asyncio.sleep(120)

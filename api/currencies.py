@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,6 +51,8 @@ async def update_currency(currency_id: int, patch: CurrencyUpdate, db: AsyncSess
         obj.currency = patch.currency
     if patch.rate is not None:
         obj.rate = patch.rate
+
+    obj.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(obj)

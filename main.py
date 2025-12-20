@@ -47,8 +47,13 @@ async def run_task():
 
 @app.on_event("startup")
 async def startup():
+    print("[APP] Запуск приложения")
+
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+        print("[DB] Таблицы базы данных готовы")
 
     await init_nats(app)
+
+    print("[TASK] Запуск фоновой задачи обновления валют")
     asyncio.create_task(update_currencies_periodically(app))
